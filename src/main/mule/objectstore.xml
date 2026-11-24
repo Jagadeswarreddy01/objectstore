@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="3386e3e2-7b68-4a1a-8574-b32370df7c6f" >
+		<db:my-sql-connection host="localhost" port="3306" user="root" password="root@123" database="mule" />
+	</db:config>
+	<os:object-store name="Object_store" doc:name="Object store" doc:id="48c27eb0-5e41-4684-ab0d-9aea7e20a413" />
+	<os:object-store name="Object_store1" doc:name="Object store" doc:id="3483c885-12f5-4ad3-bfa1-4ecf3776b0bc" />
+	<flow name="objectstoreFlow" doc:id="a64ffcde-296d-4f8b-aa05-a94ab8057453" >
+		<scheduler doc:name="Scheduler" doc:id="ae7c0c47-2629-4132-8465-f1d0045d8bb3" >
+			<scheduling-strategy >
+				<fixed-frequency frequency="5" timeUnit="MINUTES"/>
+			</scheduling-strategy>
+		</scheduler>
+		<logger level="INFO" doc:name="Logger" doc:id="8712b467-fd66-4288-9a1b-e1cb9c9017ca" message="STARTED"/>
+		<os:retrieve doc:name="Retrieve" doc:id="eca0c96e-13e6-4129-a047-79be80a5b4b7" target="watermark" key="watermark" objectStore="Object_store">
+			<os:default-value ><![CDATA[20]]></os:default-value>
+		</os:retrieve>
+		<logger level="INFO" doc:name="Logger" doc:id="94dade87-68b5-4ed6-b0a4-430b1291c116" message="#[payload]"/>
+		<db:select doc:name="Select" doc:id="3623ae87-7bd0-43ac-91e7-5e00237b041e" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * from BankDetails where custId > :custId ;]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	custId : vars.watermark
+}]]]></db:input-parameters>
+		</db:select>
+		<logger level="INFO" doc:name="Logger" doc:id="49cdbb6a-636c-4392-845b-b398ab88d554" message="#[payload]"/>
+		<os:store doc:name="Store" doc:id="6f0aac19-1d5e-448f-a55d-eee0e59fa153" key="watermark" objectStore="Object_store">
+			<os:value ><![CDATA[#[max((payload.custId default []))]]]></os:value>
+		</os:store>
+		<logger level="INFO" doc:name="Logger" doc:id="0c141be6-5da5-4ffc-b3cb-6b3aaa51eb30" message="#[payload]"/>
+	</flow>
+</mule>
